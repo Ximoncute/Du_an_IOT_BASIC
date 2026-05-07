@@ -1,135 +1,527 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
-    <title>ESP8266 IoT Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP8266 - Điều Khiển Thông Minh</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: Arial; padding: 20px; background: #f0f0f0; }
-        .card { background: white; padding: 15px; margin: 10px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); display: inline-block; width: 250px; }
-        button { padding: 8px 12px; margin: 5px; cursor: pointer; }
-        .auto { background: green; color: white; }
-        .manual { background: orange; color: white; }
-        canvas { max-width: 600px; margin: 10px; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ddd; padding: 8px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .header h1 {
+            font-size: 1.8em;
+            color: white;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: rgba(255,255,255,0.85);
+            font-size: 0.85em;
+        }
+
+        /* Mode Switch */
+        .mode-wrapper {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .mode-switch {
+            background: white;
+            border-radius: 50px;
+            padding: 5px;
+            display: inline-flex;
+            gap: 5px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .mode-btn {
+            padding: 8px 24px;
+            border: none;
+            border-radius: 50px;
+            font-size: 0.9em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .mode-auto {
+            background: #10b981;
+            color: white;
+        }
+
+        .mode-manual {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .mode-auto.active {
+            background: #059669;
+        }
+
+        .mode-manual.active {
+            background: #d97706;
+        }
+
+        /* 3 Cards - Grid */
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 14px;
+            padding: 15px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        .card-title {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .card-value {
+            font-size: 2.2em;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 12px;
+        }
+
+        .card-unit {
+            font-size: 0.4em;
+            color: #94a3b8;
+            font-weight: 400;
+        }
+
+        .led-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .led-btn {
+            flex: 1;
+            padding: 6px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.8em;
+        }
+
+        .led-on {
+            background: #22c55e;
+            color: white;
+        }
+
+        .led-off {
+            background: #ef4444;
+            color: white;
+        }
+
+        .led-status-text {
+            font-size: 0.7em;
+            color: #64748b;
+            font-style: italic;
+        }
+
+        /* 2 Charts - Cố định chiều cao */
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 14px;
+            padding: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        .chart-card h3 {
+            margin-bottom: 10px;
+            color: #1e293b;
+            font-size: 0.95em;
+            text-align: center;
+        }
+
+        /* QUAN TRỌNG: Cố định chiều cao canvas */
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        canvas {
+            max-height: 250px !important;
+            width: 100% !important;
+        }
+
+        /* Table */
+        .table-container {
+            background: white;
+            border-radius: 14px;
+            padding: 15px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .table-header h3 {
+            font-size: 1em;
+            color: #1e293b;
+        }
+
+        .export-btn {
+            background: #3b82f6;
+            color: white;
+            padding: 6px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-family: inherit;
+            font-size: 0.8em;
+        }
+
+        .export-btn:hover {
+            background: #2563eb;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8em;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        tr:hover {
+            background: #f8fafc;
+        }
+
+        /* Responsive */
+        @media (max-width: 800px) {
+            .sensor-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            .charts-container {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            .card-value {
+                font-size: 1.8em;
+            }
+            .chart-container {
+                height: 220px;
+            }
+            canvas {
+                max-height: 220px !important;
+            }
+        }
+
+        /* Scroll nhẹ cho table */
+        .table-wrapper {
+            max-height: 250px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body>
-<h2>ESP8266 - Điều khiển & Giám sát</h2>
+<div class="container">
+    <div class="header">
+        <h1>ESP8266 - Điều Khiển Thông Minh</h1>
+        <p>Giám sát nhiệt độ | độ ẩm | ánh sáng | Điều khiển LED</p>
+    </div>
 
-<div>
-    <button id="autoBtn" class="auto">Chế độ Tự động</button>
-    <button id="manualBtn" class="manual">Chế độ Thủ công</button>
+    <div class="mode-wrapper">
+        <div class="mode-switch">
+            <button id="autoModeBtn" class="mode-btn mode-auto active">Tự động</button>
+            <button id="manualModeBtn" class="mode-btn mode-manual">Thủ công</button>
+        </div>
+    </div>
+
+    <!-- 3 Card cảm biến -->
+    <div class="sensor-grid">
+        <div class="card">
+            <div class="card-title">Nhiệt độ</div>
+            <div class="card-value"><span id="tempValue">--</span><span class="card-unit">°C</span></div>
+            <div class="led-controls">
+                <button class="led-btn led-on" onclick="controlLED('led1', '1')">Bật LED1</button>
+                <button class="led-btn led-off" onclick="controlLED('led1', '0')">Tắt LED1</button>
+            </div>
+            <div class="led-status-text" id="led1Status">Trạng thái: --</div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Độ ẩm</div>
+            <div class="card-value"><span id="humValue">--</span><span class="card-unit">%</span></div>
+            <div class="led-controls">
+                <button class="led-btn led-on" onclick="controlLED('led2', '1')">Bật LED2</button>
+                <button class="led-btn led-off" onclick="controlLED('led2', '0')">Tắt LED2</button>
+            </div>
+            <div class="led-status-text" id="led2Status">Trạng thái: --</div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Ánh sáng (LDR)</div>
+            <div class="card-value"><span id="ldrValue">--</span></div>
+            <div class="led-controls">
+                <button class="led-btn led-on" onclick="controlLED('led3', '1')">Bật LED3</button>
+                <button class="led-btn led-off" onclick="controlLED('led3', '0')">Tắt LED3</button>
+            </div>
+            <div class="led-status-text" id="led3Status">Trạng thái: --</div>
+        </div>
+    </div>
+
+    <!-- 2 Biểu đồ - Chiều cao cố định -->
+    <div class="charts-container">
+        <div class="chart-card">
+            <h3>Biểu đồ nhiệt độ theo thời gian</h3>
+            <div class="chart-container">
+                <canvas id="tempChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <h3>Biểu đồ độ ẩm theo thời gian</h3>
+            <div class="chart-container">
+                <canvas id="humChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng dữ liệu -->
+    <div class="table-container">
+        <div class="table-header">
+            <h3>Dữ liệu thời gian thực</h3>
+            <button class="export-btn" onclick="exportCSV()">Xuất file CSV</button>
+        </div>
+        <div class="table-wrapper">
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>Thời gian</th>
+                        <th>Nhiệt độ (°C)</th>
+                        <th>Độ ẩm (%)</th>
+                        <th>Trạng thái LDR</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
 </div>
-
-<div class="card">
-    <h3>🌡️ Nhiệt độ</h3>
-    <p id="tempVal">-- °C</p>
-    <span>Điều khiển LED1 (nhiệt >30):</span>
-    <button onclick="controlLed('home/led1', 'on')">Bật LED1</button>
-    <button onclick="controlLed('home/led1', 'off')">Tắt LED1</button>
-</div>
-
-<div class="card">
-    <h3>💧 Độ ẩm</h3>
-    <p id="humVal">-- %</p>
-    <span>Điều khiển LED2 (ẩm >70):</span>
-    <button onclick="controlLed('home/led2', 'on')">Bật LED2</button>
-    <button onclick="controlLed('home/led2', 'off')">Tắt LED2</button>
-</div>
-
-<div class="card">
-    <h3>☀️ LDR</h3>
-    <p id="ldrVal">--</p>
-    <span>Điều khiển LED3 (tối sáng):</span>
-    <button onclick="controlLed('home/led3', 'on')">Bật LED3</button>
-    <button onclick="controlLed('home/led3', 'off')">Tắt LED3</button>
-</div>
-
-<canvas id="tempChart" width="400" height="200"></canvas>
-<canvas id="humChart" width="400" height="200"></canvas>
-
-<button onclick="exportCSV()">📁 Xuất CSV thời gian thực</button>
-
-<table id="dataTable">
-    <thead><tr><th>Thời gian</th><th>Nhiệt độ (°C)</th><th>Độ ẩm (%)</th><th>LDR</th></tr></thead>
-    <tbody></tbody>
-</table>
 
 <script>
+    // Kết nối MQTT
     const broker = "wss://broker.emqx.io:8084/mqtt";
-    const options = { username: "", password: "" };
-    const client = mqtt.connect(broker, options);
-
+    const client = mqtt.connect(broker);
+    
     let tempChart, humChart;
-    let tempData = [], humData = [], timeLabels = [];
-    let csvData = [];
-
-    function initChart() {
+    let timeData = [];
+    let tempHistory = [];
+    let humHistory = [];
+    let csvRows = [];
+    let currentMode = "auto";
+    let led1State = null, led2State = null, led3State = null;
+    
+    function updateLEDStatusUI() {
+        if (currentMode === "auto") {
+            document.getElementById("led1Status").innerHTML = "Tự động (sáng khi >30°C)";
+            document.getElementById("led2Status").innerHTML = "Tự động (sáng khi >70%)";
+            document.getElementById("led3Status").innerHTML = "Tự động (sáng khi trời tối)";
+        } else {
+            document.getElementById("led1Status").innerHTML = led1State === 1 ? "Đang BẬT" : (led1State === 0 ? "Đang TẮT" : "--");
+            document.getElementById("led2Status").innerHTML = led2State === 1 ? "Đang BẬT" : (led2State === 0 ? "Đang TẮT" : "--");
+            document.getElementById("led3Status").innerHTML = led3State === 1 ? "Đang BẬT" : (led3State === 0 ? "Đang TẮT" : "--");
+        }
+    }
+    
+    function controlLED(led, state) {
+        if (currentMode === "auto") {
+            alert("Đang ở chế độ TỰ ĐỘNG, chuyển sang THỦ CÔNG để điều khiển LED!");
+            return;
+        }
+        let topic = "";
+        if (led === "led1") topic = "esp8266/led1/control";
+        else if (led === "led2") topic = "esp8266/led2/control";
+        else topic = "esp8266/led3/control";
+        
+        client.publish(topic, state);
+        
+        if (led === "led1") led1State = parseInt(state);
+        else if (led === "led2") led2State = parseInt(state);
+        else led3State = parseInt(state);
+        updateLEDStatusUI();
+    }
+    
+    function initCharts() {
         const ctxTemp = document.getElementById('tempChart').getContext('2d');
         const ctxHum = document.getElementById('humChart').getContext('2d');
-        tempChart = new Chart(ctxTemp, { type: 'line', data: { labels: timeLabels, datasets: [{ label: 'Nhiệt độ (°C)', data: tempData, borderColor: 'red' }] } });
-        humChart = new Chart(ctxHum, { type: 'line', data: { labels: timeLabels, datasets: [{ label: 'Độ ẩm (%)', data: humData, borderColor: 'blue' }] } });
+        
+        tempChart = new Chart(ctxTemp, {
+            type: 'line',
+            data: { labels: timeData, datasets: [{ label: 'Nhiệt độ (°C)', data: tempHistory, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', tension: 0.3, fill: true, pointRadius: 2 }] },
+            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top', labels: { font: { size: 10 } } } } }
+        });
+        
+        humChart = new Chart(ctxHum, {
+            type: 'line',
+            data: { labels: timeData, datasets: [{ label: 'Độ ẩm (%)', data: humHistory, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', tension: 0.3, fill: true, pointRadius: 2 }] },
+            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top', labels: { font: { size: 10 } } } } }
+        });
     }
-
-    function updateChart(time, temp, hum, ldr) {
-        timeLabels.push(time);
-        tempData.push(temp);
-        humData.push(hum);
-        if (timeLabels.length > 20) {
-            timeLabels.shift(); tempData.shift(); humData.shift();
+    
+    function updateCharts(time, temp, hum) {
+        timeData.push(time);
+        tempHistory.push(temp);
+        humHistory.push(hum);
+        
+        if (timeData.length > 20) {
+            timeData.shift();
+            tempHistory.shift();
+            humHistory.shift();
         }
+        
         tempChart.update();
         humChart.update();
-
-        const row = `<tr><td>${time}</td><td>${temp}</td><td>${hum}</td><td>${ldr}</td></tr>`;
-        document.getElementById('dataTable').querySelector('tbody').innerHTML += row;
-        csvData.push({ time, temp, hum, ldr });
     }
-
+    
+    function addTableRow(time, temp, hum, ldr) {
+        const tbody = document.getElementById('dataTable').querySelector('tbody');
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${time}</td><td>${temp}</td><td>${hum}</td><td>${ldr}</td>`;
+        tbody.appendChild(row);
+        
+        if (tbody.children.length > 15) tbody.deleteRow(0);
+        
+        csvRows.push({ time, temp, hum, ldr });
+        if (csvRows.length > 100) csvRows.shift();
+    }
+    
     function exportCSV() {
-        let content = "Thời gian,Nhiệt độ,Độ ẩm,LDR\n";
-        csvData.forEach(row => {
-            content += `${row.time},${row.temp},${row.hum},${row.ldr}\n`;
-        });
-        const blob = new Blob([content], { type: "text/csv" });
+        let content = "Thời gian,Nhiệt độ (°C),Độ ẩm (%),Trạng thái LDR\n";
+        csvRows.forEach(row => { content += `${row.time},${row.temp},${row.hum},${row.ldr}\n`; });
+        const blob = new Blob(["\uFEFF" + content], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = "sensor_data.csv";
+        link.download = `du_lieu_${new Date().toISOString().slice(0,19)}.csv`;
         link.click();
+        URL.revokeObjectURL(link.href);
     }
-
-    function controlLed(topic, state) {
-        client.publish(topic, state);
-    }
-
+    
+    // MQTT Events
     client.on('connect', () => {
-        client.subscribe('home/sensor/temp');
-        client.subscribe('home/sensor/hum');
-        client.subscribe('home/sensor/ldr');
-        initChart();
+        console.log("MQTT đã kết nối");
+        client.subscribe("esp8266/dht11/temperature");
+        client.subscribe("esp8266/dht11/humidity");
+        client.subscribe("esp8266/ldr/status");
+        client.subscribe("esp8266/mode");
+        client.subscribe("esp8266/led1/control");
+        client.subscribe("esp8266/led2/control");
+        client.subscribe("esp8266/led3/control");
+        initCharts();
     });
-
+    
     client.on('message', (topic, message) => {
         const val = message.toString();
-        const now = new Date().toLocaleTimeString();
-        if (topic === 'home/sensor/temp') {
-            document.getElementById('tempVal').innerText = val + " °C";
-            updateChart(now, val, document.getElementById('humVal').innerText.replace(" %",""), document.getElementById('ldrVal').innerText);
+        const now = new Date().toLocaleTimeString('vi-VN');
+        
+        if (topic === "esp8266/dht11/temperature") {
+            document.getElementById("tempValue").innerText = val;
+            const currentHum = document.getElementById("humValue").innerText;
+            const currentLDR = document.getElementById("ldrValue").innerText;
+            updateCharts(now, parseFloat(val), parseFloat(currentHum));
+            addTableRow(now, val, currentHum, currentLDR);
         }
-        if (topic === 'home/sensor/hum') {
-            document.getElementById('humVal').innerText = val + " %";
-            updateChart(now, document.getElementById('tempVal').innerText.replace(" °C",""), val, document.getElementById('ldrVal').innerText);
+        else if (topic === "esp8266/dht11/humidity") {
+            document.getElementById("humValue").innerText = val;
+            const currentTemp = document.getElementById("tempValue").innerText;
+            const currentLDR = document.getElementById("ldrValue").innerText;
+            updateCharts(now, parseFloat(currentTemp), parseFloat(val));
+            addTableRow(now, currentTemp, val, currentLDR);
         }
-        if (topic === 'home/sensor/ldr') {
-            document.getElementById('ldrVal').innerText = val;
-            updateChart(now, document.getElementById('tempVal').innerText.replace(" °C",""), document.getElementById('humVal').innerText.replace(" %",""), val);
+        else if (topic === "esp8266/ldr/status") {
+            document.getElementById("ldrValue").innerText = val;
+        }
+        else if (topic === "esp8266/mode") {
+            currentMode = val;
+            if (val === "auto") {
+                document.getElementById("autoModeBtn").classList.add("active");
+                document.getElementById("manualModeBtn").classList.remove("active");
+            } else {
+                document.getElementById("manualModeBtn").classList.add("active");
+                document.getElementById("autoModeBtn").classList.remove("active");
+            }
+            updateLEDStatusUI();
+        }
+        else if (topic === "esp8266/led1/control") {
+            led1State = parseInt(val);
+            if (currentMode === "manual") updateLEDStatusUI();
+        }
+        else if (topic === "esp8266/led2/control") {
+            led2State = parseInt(val);
+            if (currentMode === "manual") updateLEDStatusUI();
+        }
+        else if (topic === "esp8266/led3/control") {
+            led3State = parseInt(val);
+            if (currentMode === "manual") updateLEDStatusUI();
         }
     });
-
-    document.getElementById('autoBtn').onclick = () => client.publish('home/mode', 'auto');
-    document.getElementById('manualBtn').onclick = () => client.publish('home/mode', 'manual');
+    
+    document.getElementById("autoModeBtn").onclick = () => client.publish("esp8266/mode", "auto");
+    document.getElementById("manualModeBtn").onclick = () => client.publish("esp8266/mode", "manual");
+    
+    updateLEDStatusUI();
 </script>
 </body>
 </html>
