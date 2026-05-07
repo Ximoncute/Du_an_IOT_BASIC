@@ -2,277 +2,60 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>ESP8266 - Điều Khiển Thông Minh</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        /* Header */
-        .header {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        .header h1 {
-            font-size: 1.8em;
-            color: white;
-            margin-bottom: 5px;
-        }
-
-        .header p {
-            color: rgba(255,255,255,0.85);
-            font-size: 0.85em;
-        }
-
-        /* Mode Switch */
-        .mode-wrapper {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        .mode-switch {
-            background: white;
-            border-radius: 50px;
-            padding: 5px;
-            display: inline-flex;
-            gap: 5px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-
-        .mode-btn {
-            padding: 8px 24px;
-            border: none;
-            border-radius: 50px;
-            font-size: 0.9em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-family: inherit;
-        }
-
-        .mode-auto {
-            background: #10b981;
-            color: white;
-        }
-
-        .mode-manual {
-            background: #f59e0b;
-            color: white;
-        }
-
-        .mode-auto.active {
-            background: #059669;
-        }
-
-        .mode-manual.active {
-            background: #d97706;
-        }
-
-        /* 3 Cards - Grid */
-        .sensor-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 14px;
-            padding: 15px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-        }
-
-        .card-title {
-            font-size: 0.9em;
-            color: #666;
-            margin-bottom: 8px;
-            font-weight: 500;
-        }
-
-        .card-value {
-            font-size: 2.2em;
-            font-weight: 700;
-            color: #1e293b;
-            margin-bottom: 12px;
-        }
-
-        .card-unit {
-            font-size: 0.4em;
-            color: #94a3b8;
-            font-weight: 400;
-        }
-
-        .led-controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 8px;
-        }
-
-        .led-btn {
-            flex: 1;
-            padding: 6px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 0.8em;
-        }
-
-        .led-on {
-            background: #22c55e;
-            color: white;
-        }
-
-        .led-off {
-            background: #ef4444;
-            color: white;
-        }
-
-        .led-status-text {
-            font-size: 0.7em;
-            color: #64748b;
-            font-style: italic;
-        }
-
-        /* 2 Charts - Cố định chiều cao */
-        .charts-container {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-
-        .chart-card {
-            background: white;
-            border-radius: 14px;
-            padding: 12px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-        }
-
-        .chart-card h3 {
-            margin-bottom: 10px;
-            color: #1e293b;
-            font-size: 0.95em;
-            text-align: center;
-        }
-
-        /* QUAN TRỌNG: Cố định chiều cao canvas */
-        .chart-container {
-            position: relative;
-            height: 250px;
-            width: 100%;
-        }
-
-        canvas {
-            max-height: 250px !important;
-            width: 100% !important;
-        }
-
-        /* Table */
-        .table-container {
-            background: white;
-            border-radius: 14px;
-            padding: 15px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-        }
-
-        .table-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .table-header h3 {
-            font-size: 1em;
-            color: #1e293b;
-        }
-
-        .export-btn {
-            background: #3b82f6;
-            color: white;
-            padding: 6px 16px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            font-family: inherit;
-            font-size: 0.8em;
-        }
-
-        .export-btn:hover {
-            background: #2563eb;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.8em;
-        }
-
-        th, td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        th {
-            background: #f8fafc;
-            font-weight: 600;
-            color: #334155;
-        }
-
-        tr:hover {
-            background: #f8fafc;
-        }
-
-        /* Responsive */
-        @media (max-width: 800px) {
-            .sensor-grid {
-                grid-template-columns: 1fr;
-                gap: 12px;
-            }
-            .charts-container {
-                grid-template-columns: 1fr;
-                gap: 12px;
-            }
-            .card-value {
-                font-size: 1.8em;
-            }
-            .chart-container {
-                height: 220px;
-            }
-            canvas {
-                max-height: 220px !important;
-            }
-        }
-
-        /* Scroll nhẹ cho table */
-        .table-wrapper {
-            max-height: 250px;
-            overflow-y: auto;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); min-height: 100vh; padding: 10px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 15px; }
+        .header h1 { font-size: 1.4em; color: white; }
+        .header p { color: rgba(255,255,255,0.85); font-size: 0.7em; }
+        .mode-wrapper { text-align: center; margin-bottom: 15px; }
+        .mode-switch { background: white; border-radius: 40px; padding: 4px; display: inline-flex; gap: 4px; }
+        .mode-btn { padding: 6px 20px; border: none; border-radius: 40px; font-size: 0.85em; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .mode-auto { background: #10b981; color: white; }
+        .mode-manual { background: #f59e0b; color: white; }
+        .mode-auto.active { background: #059669; }
+        .mode-manual.active { background: #d97706; }
+        .sensor-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
+        .card { background: white; border-radius: 12px; padding: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .card-title { font-size: 0.8em; color: #666; margin-bottom: 5px; font-weight: 600; }
+        .card-value { font-size: 1.8em; font-weight: 700; color: #1e293b; margin-bottom: 8px; }
+        .card-unit { font-size: 0.4em; color: #94a3b8; }
+        .led-status-row { display: flex; gap: 8px; margin-bottom: 6px; font-size: 0.7em; align-items: center; }
+        .led-badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-weight: 600; font-size: 0.7em; }
+        .led-badge-on { background: #22c55e; color: white; }
+        .led-badge-off { background: #9ca3af; color: white; }
+        .led-controls { display: flex; gap: 6px; margin: 8px 0 5px; }
+        .led-btn { flex: 1; padding: 5px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.7em; }
+        .led-on { background: #22c55e; color: white; }
+        .led-off { background: #ef4444; color: white; }
+        .led-auto-note { font-size: 0.6em; color: #64748b; font-style: italic; }
+        .data-section { background: white; border-radius: 12px; padding: 10px; margin-bottom: 15px; }
+        .data-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+        .data-header h3 { font-size: 0.85em; }
+        .export-btn { background: #3b82f6; color: white; padding: 5px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.7em; font-weight: 600; }
+        .export-btn:hover { background: #2563eb; }
+        .table-wrapper { max-height: 140px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.65em; }
+        th, td { padding: 5px 4px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f8fafc; position: sticky; top: 0; font-weight: 600; }
+        .charts-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .chart-card { background: white; border-radius: 12px; padding: 8px; }
+        .chart-card h3 { font-size: 0.75em; text-align: center; margin-bottom: 5px; }
+        .chart-wrapper { position: relative; height: 170px; width: 100%; }
+        canvas { max-height: 170px !important; width: 100% !important; }
+        @media (max-width: 700px) {
+            .sensor-grid { grid-template-columns: 1fr; gap: 8px; }
+            .charts-container { grid-template-columns: 1fr; }
+            .chart-wrapper { height: 150px; }
+            canvas { max-height: 150px !important; }
+            .card-value { font-size: 1.5em; }
+            .table-wrapper { max-height: 120px; }
+            th, td { font-size: 0.6em; padding: 4px 3px; }
         }
     </style>
 </head>
@@ -280,7 +63,7 @@
 <div class="container">
     <div class="header">
         <h1>ESP8266 - Điều Khiển Thông Minh</h1>
-        <p>Giám sát nhiệt độ | độ ẩm | ánh sáng | Điều khiển LED</p>
+        <p>Nhiệt độ | Độ ẩm | Ánh sáng | Điều khiển LED</p>
     </div>
 
     <div class="mode-wrapper">
@@ -290,118 +73,107 @@
         </div>
     </div>
 
-    <!-- 3 Card cảm biến -->
     <div class="sensor-grid">
         <div class="card">
             <div class="card-title">Nhiệt độ</div>
             <div class="card-value"><span id="tempValue">--</span><span class="card-unit">°C</span></div>
+            <div class="led-status-row"><span>LED1:</span><span id="led1Badge" class="led-badge led-badge-off">TẮT</span></div>
             <div class="led-controls">
                 <button class="led-btn led-on" onclick="controlLED('led1', '1')">Bật LED1</button>
                 <button class="led-btn led-off" onclick="controlLED('led1', '0')">Tắt LED1</button>
             </div>
-            <div class="led-status-text" id="led1Status">Trạng thái: --</div>
+            <div class="led-auto-note" id="led1Note">Tự động: sáng khi nhiệt độ > 30°C</div>
         </div>
 
         <div class="card">
             <div class="card-title">Độ ẩm</div>
             <div class="card-value"><span id="humValue">--</span><span class="card-unit">%</span></div>
+            <div class="led-status-row"><span>LED2:</span><span id="led2Badge" class="led-badge led-badge-off">TẮT</span></div>
             <div class="led-controls">
                 <button class="led-btn led-on" onclick="controlLED('led2', '1')">Bật LED2</button>
                 <button class="led-btn led-off" onclick="controlLED('led2', '0')">Tắt LED2</button>
             </div>
-            <div class="led-status-text" id="led2Status">Trạng thái: --</div>
+            <div class="led-auto-note" id="led2Note">Tự động: sáng khi độ ẩm > 70%</div>
         </div>
 
         <div class="card">
             <div class="card-title">Ánh sáng (LDR)</div>
             <div class="card-value"><span id="ldrValue">--</span></div>
+            <div class="led-status-row"><span>LED3:</span><span id="led3Badge" class="led-badge led-badge-off">TẮT</span></div>
             <div class="led-controls">
                 <button class="led-btn led-on" onclick="controlLED('led3', '1')">Bật LED3</button>
                 <button class="led-btn led-off" onclick="controlLED('led3', '0')">Tắt LED3</button>
             </div>
-            <div class="led-status-text" id="led3Status">Trạng thái: --</div>
+            <div class="led-auto-note" id="led3Note">Tự động: sáng khi trời tối</div>
         </div>
     </div>
 
-    <!-- 2 Biểu đồ - Chiều cao cố định -->
-    <div class="charts-container">
-        <div class="chart-card">
-            <h3>Biểu đồ nhiệt độ theo thời gian</h3>
-            <div class="chart-container">
-                <canvas id="tempChart"></canvas>
-            </div>
-        </div>
-        <div class="chart-card">
-            <h3>Biểu đồ độ ẩm theo thời gian</h3>
-            <div class="chart-container">
-                <canvas id="humChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bảng dữ liệu -->
-    <div class="table-container">
-        <div class="table-header">
+    <div class="data-section">
+        <div class="data-header">
             <h3>Dữ liệu thời gian thực</h3>
             <button class="export-btn" onclick="exportCSV()">Xuất file CSV</button>
         </div>
         <div class="table-wrapper">
             <table id="dataTable">
-                <thead>
-                    <tr>
-                        <th>Thời gian</th>
-                        <th>Nhiệt độ (°C)</th>
-                        <th>Độ ẩm (%)</th>
-                        <th>Trạng thái LDR</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>Thời gian</th><th>Nhiệt độ</th><th>Độ ẩm</th><th>LDR</th><th>LED1</th><th>LED2</th><th>LED3</th></tr></thead>
                 <tbody></tbody>
             </table>
         </div>
     </div>
+
+    <div class="charts-container">
+        <div class="chart-card"><h3>Biểu đồ nhiệt độ theo thời gian</h3><div class="chart-wrapper"><canvas id="tempChart"></canvas></div></div>
+        <div class="chart-card"><h3>Biểu đồ độ ẩm theo thời gian</h3><div class="chart-wrapper"><canvas id="humChart"></canvas></div></div>
+    </div>
 </div>
 
 <script>
-    // Kết nối MQTT
     const broker = "wss://broker.emqx.io:8084/mqtt";
     const client = mqtt.connect(broker);
     
     let tempChart, humChart;
-    let timeData = [];
-    let tempHistory = [];
-    let humHistory = [];
-    let csvRows = [];
-    let currentMode = "auto";
+    let timeData = [], tempHistory = [], humHistory = [], csvRows = [];
     let led1State = null, led2State = null, led3State = null;
+    let isUpdating = false;
     
-    function updateLEDStatusUI() {
-        if (currentMode === "auto") {
-            document.getElementById("led1Status").innerHTML = "Tự động (sáng khi >30°C)";
-            document.getElementById("led2Status").innerHTML = "Tự động (sáng khi >70%)";
-            document.getElementById("led3Status").innerHTML = "Tự động (sáng khi trời tối)";
-        } else {
-            document.getElementById("led1Status").innerHTML = led1State === 1 ? "Đang BẬT" : (led1State === 0 ? "Đang TẮT" : "--");
-            document.getElementById("led2Status").innerHTML = led2State === 1 ? "Đang BẬT" : (led2State === 0 ? "Đang TẮT" : "--");
-            document.getElementById("led3Status").innerHTML = led3State === 1 ? "Đang BẬT" : (led3State === 0 ? "Đang TẮT" : "--");
+    function updateLEDBadges() {
+        if (isUpdating) return;
+        
+        const led1Badge = document.getElementById("led1Badge");
+        const led2Badge = document.getElementById("led2Badge");
+        const led3Badge = document.getElementById("led3Badge");
+        
+        if (led1State === 1) {
+            led1Badge.innerHTML = "BẬT";
+            led1Badge.className = "led-badge led-badge-on";
+        } else if (led1State === 0) {
+            led1Badge.innerHTML = "TẮT";
+            led1Badge.className = "led-badge led-badge-off";
+        }
+        
+        if (led2State === 1) {
+            led2Badge.innerHTML = "BẬT";
+            led2Badge.className = "led-badge led-badge-on";
+        } else if (led2State === 0) {
+            led2Badge.innerHTML = "TẮT";
+            led2Badge.className = "led-badge led-badge-off";
+        }
+        
+        if (led3State === 1) {
+            led3Badge.innerHTML = "BẬT";
+            led3Badge.className = "led-badge led-badge-on";
+        } else if (led3State === 0) {
+            led3Badge.innerHTML = "TẮT";
+            led3Badge.className = "led-badge led-badge-off";
         }
     }
     
     function controlLED(led, state) {
-        if (currentMode === "auto") {
-            alert("Đang ở chế độ TỰ ĐỘNG, chuyển sang THỦ CÔNG để điều khiển LED!");
-            return;
-        }
         let topic = "";
         if (led === "led1") topic = "esp8266/led1/control";
         else if (led === "led2") topic = "esp8266/led2/control";
         else topic = "esp8266/led3/control";
-        
         client.publish(topic, state);
-        
-        if (led === "led1") led1State = parseInt(state);
-        else if (led === "led2") led2State = parseInt(state);
-        else led3State = parseInt(state);
-        updateLEDStatusUI();
     }
     
     function initCharts() {
@@ -411,13 +183,13 @@
         tempChart = new Chart(ctxTemp, {
             type: 'line',
             data: { labels: timeData, datasets: [{ label: 'Nhiệt độ (°C)', data: tempHistory, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', tension: 0.3, fill: true, pointRadius: 2 }] },
-            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top', labels: { font: { size: 10 } } } } }
+            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top', labels: { font: { size: 9 } } } } }
         });
         
         humChart = new Chart(ctxHum, {
             type: 'line',
             data: { labels: timeData, datasets: [{ label: 'Độ ẩm (%)', data: humHistory, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', tension: 0.3, fill: true, pointRadius: 2 }] },
-            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top', labels: { font: { size: 10 } } } } }
+            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top', labels: { font: { size: 9 } } } } }
         });
     }
     
@@ -425,103 +197,105 @@
         timeData.push(time);
         tempHistory.push(temp);
         humHistory.push(hum);
-        
         if (timeData.length > 20) {
             timeData.shift();
             tempHistory.shift();
             humHistory.shift();
         }
-        
         tempChart.update();
         humChart.update();
     }
     
-    function addTableRow(time, temp, hum, ldr) {
+    function addTableRow(time, temp, hum, ldr, led1, led2, led3) {
         const tbody = document.getElementById('dataTable').querySelector('tbody');
         const row = document.createElement('tr');
-        row.innerHTML = `<td>${time}</td><td>${temp}</td><td>${hum}</td><td>${ldr}</td>`;
+        row.innerHTML = `<td>${time}</td><td>${temp}</td><td>${hum}</td><td>${ldr}</td><td>${led1}</td><td>${led2}</td><td>${led3}</td>`;
         tbody.appendChild(row);
-        
-        if (tbody.children.length > 15) tbody.deleteRow(0);
-        
-        csvRows.push({ time, temp, hum, ldr });
+        if (tbody.children.length > 12) tbody.deleteRow(0);
+        csvRows.push({ time, temp, hum, ldr, led1, led2, led3 });
         if (csvRows.length > 100) csvRows.shift();
     }
     
     function exportCSV() {
-        let content = "Thời gian,Nhiệt độ (°C),Độ ẩm (%),Trạng thái LDR\n";
-        csvRows.forEach(row => { content += `${row.time},${row.temp},${row.hum},${row.ldr}\n`; });
+        let content = "Thời gian,Nhiệt độ (°C),Độ ẩm (%),LDR,LED1,LED2,LED3\n";
+        csvRows.forEach(row => { content += `${row.time},${row.temp},${row.hum},${row.ldr},${row.led1},${row.led2},${row.led3}\n`; });
         const blob = new Blob(["\uFEFF" + content], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = `du_lieu_${new Date().toISOString().slice(0,19)}.csv`;
+        link.download = `dulieu_${new Date().toISOString().slice(0,19)}.csv`;
         link.click();
         URL.revokeObjectURL(link.href);
     }
     
-    // MQTT Events
     client.on('connect', () => {
-        console.log("MQTT đã kết nối");
+        console.log("MQTT da ket noi");
+        client.subscribe("esp8266/led1/status");
+        client.subscribe("esp8266/led2/status");
+        client.subscribe("esp8266/led3/status");
+        client.subscribe("esp8266/mode");
         client.subscribe("esp8266/dht11/temperature");
         client.subscribe("esp8266/dht11/humidity");
         client.subscribe("esp8266/ldr/status");
-        client.subscribe("esp8266/mode");
-        client.subscribe("esp8266/led1/control");
-        client.subscribe("esp8266/led2/control");
-        client.subscribe("esp8266/led3/control");
         initCharts();
+        setTimeout(() => { client.publish("esp8266/get/status", "request"); }, 500);
     });
     
     client.on('message', (topic, message) => {
         const val = message.toString();
         const now = new Date().toLocaleTimeString('vi-VN');
         
-        if (topic === "esp8266/dht11/temperature") {
+        if (topic === "esp8266/led1/status") {
+            led1State = (val === "BAT") ? 1 : 0;
+            updateLEDBadges();
+        }
+        else if (topic === "esp8266/led2/status") {
+            led2State = (val === "BAT") ? 1 : 0;
+            updateLEDBadges();
+        }
+        else if (topic === "esp8266/led3/status") {
+            led3State = (val === "BAT") ? 1 : 0;
+            updateLEDBadges();
+        }
+        else if (topic === "esp8266/mode") {
+            if (val === "auto") {
+                document.getElementById("autoModeBtn").classList.add("active");
+                document.getElementById("manualModeBtn").classList.remove("active");
+                document.getElementById("led1Note").innerHTML = "Tự động: sáng khi nhiệt độ > 30°C";
+                document.getElementById("led2Note").innerHTML = "Tự động: sáng khi độ ẩm > 70%";
+                document.getElementById("led3Note").innerHTML = "Tự động: sáng khi trời tối";
+            } else {
+                document.getElementById("manualModeBtn").classList.add("active");
+                document.getElementById("autoModeBtn").classList.remove("active");
+                document.getElementById("led1Note").innerHTML = "Thủ công: bấm nút để điều khiển";
+                document.getElementById("led2Note").innerHTML = "Thủ công: bấm nút để điều khiển";
+                document.getElementById("led3Note").innerHTML = "Thủ công: bấm nút để điều khiển";
+            }
+        }
+        else if (topic === "esp8266/dht11/temperature") {
             document.getElementById("tempValue").innerText = val;
-            const currentHum = document.getElementById("humValue").innerText;
-            const currentLDR = document.getElementById("ldrValue").innerText;
-            updateCharts(now, parseFloat(val), parseFloat(currentHum));
-            addTableRow(now, val, currentHum, currentLDR);
         }
         else if (topic === "esp8266/dht11/humidity") {
             document.getElementById("humValue").innerText = val;
-            const currentTemp = document.getElementById("tempValue").innerText;
-            const currentLDR = document.getElementById("ldrValue").innerText;
-            updateCharts(now, parseFloat(currentTemp), parseFloat(val));
-            addTableRow(now, currentTemp, val, currentLDR);
         }
         else if (topic === "esp8266/ldr/status") {
             document.getElementById("ldrValue").innerText = val;
         }
-        else if (topic === "esp8266/mode") {
-            currentMode = val;
-            if (val === "auto") {
-                document.getElementById("autoModeBtn").classList.add("active");
-                document.getElementById("manualModeBtn").classList.remove("active");
-            } else {
-                document.getElementById("manualModeBtn").classList.add("active");
-                document.getElementById("autoModeBtn").classList.remove("active");
-            }
-            updateLEDStatusUI();
-        }
-        else if (topic === "esp8266/led1/control") {
-            led1State = parseInt(val);
-            if (currentMode === "manual") updateLEDStatusUI();
-        }
-        else if (topic === "esp8266/led2/control") {
-            led2State = parseInt(val);
-            if (currentMode === "manual") updateLEDStatusUI();
-        }
-        else if (topic === "esp8266/led3/control") {
-            led3State = parseInt(val);
-            if (currentMode === "manual") updateLEDStatusUI();
+        
+        const temp = document.getElementById("tempValue").innerText;
+        const hum = document.getElementById("humValue").innerText;
+        const ldr = document.getElementById("ldrValue").innerText;
+        const led1 = (led1State === 1) ? "BẬT" : "TẮT";
+        const led2 = (led2State === 1) ? "BẬT" : "TẮT";
+        const led3 = (led3State === 1) ? "BẬT" : "TẮT";
+        
+        if ((topic === "esp8266/dht11/temperature" || topic === "esp8266/dht11/humidity") && temp !== "--" && hum !== "--") {
+            updateCharts(now, parseFloat(temp), parseFloat(hum));
+            addTableRow(now, temp, hum, ldr, led1, led2, led3);
         }
     });
     
     document.getElementById("autoModeBtn").onclick = () => client.publish("esp8266/mode", "auto");
     document.getElementById("manualModeBtn").onclick = () => client.publish("esp8266/mode", "manual");
-    
-    updateLEDStatusUI();
 </script>
 </body>
 </html>
