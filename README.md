@@ -682,3 +682,6 @@ Màn hình chính:
 
 
 >>>>>>> 0e2c434507a91c2af5ec3a2caef31b1a522ba44f
+## Quét mã để điều khiển qua điện thoại
+<img width="709" height="690" alt="image" src="https://github.com/user-attachments/assets/b4182764-1d6f-4896-9b36-863232f0dca1" />
+
