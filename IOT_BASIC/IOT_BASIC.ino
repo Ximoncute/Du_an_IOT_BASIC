@@ -3,8 +3,8 @@
 #include <DHT.h>
 
 // ========== CẤU HÌNH WiFi & MQTT ==========
-const char* ssid = "P502";
-const char* password = "88888888";
+const char* ssid = "Hieu Cute";
+const char* password = "ximon123";
 const char* mqtt_server = "broker.emqx.io";
 const int mqtt_port = 1883;
 
