@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ESP8266 IoT Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f0f0f0; }
+        .card { background: white; padding: 15px; margin: 10px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); display: inline-block; width: 250px; }
+        button { padding: 8px 12px; margin: 5px; cursor: pointer; }
+        .auto { background: green; color: white; }
+        .manual { background: orange; color: white; }
+        canvas { max-width: 600px; margin: 10px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+    </style>
+</head>
+<body>
+<h2>ESP8266 - Điều khiển & Giám sát</h2>
+
+<div>
+    <button id="autoBtn" class="auto">Chế độ Tự động</button>
+    <button id="manualBtn" class="manual">Chế độ Thủ công</button>
+</div>
+
+<div class="card">
+    <h3>🌡️ Nhiệt độ</h3>
+    <p id="tempVal">-- °C</p>
+    <span>Điều khiển LED1 (nhiệt >30):</span>
+    <button onclick="controlLed('home/led1', 'on')">Bật LED1</button>
+    <button onclick="controlLed('home/led1', 'off')">Tắt LED1</button>
+</div>
+
+<div class="card">
+    <h3>💧 Độ ẩm</h3>
+    <p id="humVal">-- %</p>
+    <span>Điều khiển LED2 (ẩm >70):</span>
+    <button onclick="controlLed('home/led2', 'on')">Bật LED2</button>
+    <button onclick="controlLed('home/led2', 'off')">Tắt LED2</button>
+</div>
+
+<div class="card">
+    <h3>☀️ LDR</h3>
+    <p id="ldrVal">--</p>
+    <span>Điều khiển LED3 (tối sáng):</span>
+    <button onclick="controlLed('home/led3', 'on')">Bật LED3</button>
+    <button onclick="controlLed('home/led3', 'off')">Tắt LED3</button>
+</div>
+
+<canvas id="tempChart" width="400" height="200"></canvas>
+<canvas id="humChart" width="400" height="200"></canvas>
+
+<button onclick="exportCSV()">📁 Xuất CSV thời gian thực</button>
+
+<table id="dataTable">
+    <thead><tr><th>Thời gian</th><th>Nhiệt độ (°C)</th><th>Độ ẩm (%)</th><th>LDR</th></tr></thead>
+    <tbody></tbody>
+</table>
+
+<script>
+    const broker = "wss://broker.emqx.io:8084/mqtt";
+    const options = { username: "", password: "" };
+    const client = mqtt.connect(broker, options);
+
+    let tempChart, humChart;
+    let tempData = [], humData = [], timeLabels = [];
+    let csvData = [];
+
+    function initChart() {
+        const ctxTemp = document.getElementById('tempChart').getContext('2d');
+        const ctxHum = document.getElementById('humChart').getContext('2d');
+        tempChart = new Chart(ctxTemp, { type: 'line', data: { labels: timeLabels, datasets: [{ label: 'Nhiệt độ (°C)', data: tempData, borderColor: 'red' }] } });
+        humChart = new Chart(ctxHum, { type: 'line', data: { labels: timeLabels, datasets: [{ label: 'Độ ẩm (%)', data: humData, borderColor: 'blue' }] } });
+    }
+
+    function updateChart(time, temp, hum, ldr) {
+        timeLabels.push(time);
+        tempData.push(temp);
+        humData.push(hum);
+        if (timeLabels.length > 20) {
+            timeLabels.shift(); tempData.shift(); humData.shift();
+        }
+        tempChart.update();
+        humChart.update();
+
+        const row = `<tr><td>${time}</td><td>${temp}</td><td>${hum}</td><td>${ldr}</td></tr>`;
+        document.getElementById('dataTable').querySelector('tbody').innerHTML += row;
+        csvData.push({ time, temp, hum, ldr });
+    }
+
+    function exportCSV() {
+        let content = "Thời gian,Nhiệt độ,Độ ẩm,LDR\n";
+        csvData.forEach(row => {
+            content += `${row.time},${row.temp},${row.hum},${row.ldr}\n`;
+        });
+        const blob = new Blob([content], { type: "text/csv" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "sensor_data.csv";
+        link.click();
+    }
+
+    function controlLed(topic, state) {
+        client.publish(topic, state);
+    }
+
+    client.on('connect', () => {
+        client.subscribe('home/sensor/temp');
+        client.subscribe('home/sensor/hum');
+        client.subscribe('home/sensor/ldr');
+        initChart();
+    });
+
+    client.on('message', (topic, message) => {
+        const val = message.toString();
+        const now = new Date().toLocaleTimeString();
+        if (topic === 'home/sensor/temp') {
+            document.getElementById('tempVal').innerText = val + " °C";
+            updateChart(now, val, document.getElementById('humVal').innerText.replace(" %",""), document.getElementById('ldrVal').innerText);
+        }
+        if (topic === 'home/sensor/hum') {
+            document.getElementById('humVal').innerText = val + " %";
+            updateChart(now, document.getElementById('tempVal').innerText.replace(" °C",""), val, document.getElementById('ldrVal').innerText);
+        }
+        if (topic === 'home/sensor/ldr') {
+            document.getElementById('ldrVal').innerText = val;
+            updateChart(now, document.getElementById('tempVal').innerText.replace(" °C",""), document.getElementById('humVal').innerText.replace(" %",""), val);
+        }
+    });
+
+    document.getElementById('autoBtn').onclick = () => client.publish('home/mode', 'auto');
+    document.getElementById('manualBtn').onclick = () => client.publish('home/mode', 'manual');
+</script>
+</body>
+</html>
