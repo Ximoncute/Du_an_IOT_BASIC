@@ -670,4 +670,9 @@ Biểu đồ bắt đầu vẽ
 
 ## 📖 Cách Sử Dụng Giao Diện
 Màn hình chính:
+<<<<<<< HEAD
 <img width="736" height="744" alt="image" src="https://github.com/user-attachments/assets/c7709403-3f8a-4809-bced-169944acef14" />
+=======
+<img width="736" height="744" alt="image" src="https://github.com/user-attachments/assets/c7709403-3f8a-4809-bced-169944acef14" />
+
+>>>>>>> 0e2c434507a91c2af5ec3a2caef31b1a522ba44f
